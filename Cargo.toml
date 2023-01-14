@@ -14,7 +14,6 @@ axum = "0.6"
 ansi-to-html = "0.1"
 bytesize = "1.1"
 tokio = "1.24"
-linemux = "0.3"
 tokio-stream = { version = "0.1", features = ["fs"] }
 tower = "0.4"
 tower-http = { version = "0.3", features = ["trace"] }
