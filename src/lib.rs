@@ -69,6 +69,8 @@ struct LogFileOptions {
     /// The directory to store the log files in.
     /// Will be created if it doesn't yet exist.
     pub directory: PathBuf,
+    /// Name of the log files.
+    pub name: String,
     /// How often to rotate the log files
     pub rotation: Rotation,
 }
@@ -114,7 +116,7 @@ impl ReportWriter {
             let appender = RollingFileAppender::new(
                 log_file_options.rotation.clone(),
                 log_file_options.directory.clone(),
-                "email-weather.log",
+                format!("{}.log", log_file_options.name),
             );
 
             Some(appender)
@@ -191,6 +193,8 @@ pub struct Options {
     pub data_dir: PathBuf,
     /// What log rotation to use.
     pub log_rotation: Rotation,
+    /// Name for the log files.
+    pub log_file_name: String,
 }
 
 impl Options {
@@ -223,6 +227,7 @@ pub fn setup_logging(options: &Options) -> eyre::Result<Guard> {
         stdout: true,
         stderr: false,
         log_file: Some(LogFileOptions {
+            name: options.log_file_name.clone(),
             directory: log_dir,
             rotation: options.log_rotation.clone(),
         }),
