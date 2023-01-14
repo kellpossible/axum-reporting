@@ -183,8 +183,13 @@ pub struct Guard {
 }
 
 pub struct Options {
-    pub title: String,
+    /// What default filter to use for logging.
+    pub default_filter: String,
+    /// What title to use for log page.
+    pub page_title: String,
+    /// Which directory to store the log files in.
     pub data_dir: PathBuf,
+    /// What log rotation to use.
     pub log_rotation: Rotation,
 }
 
@@ -229,7 +234,7 @@ pub fn setup_logging(options: &Options) -> eyre::Result<Guard> {
         .finish(report_writer);
 
     let rust_log_env: String =
-        std::env::var("RUST_LOG").unwrap_or_else(|_| "warn,email_weather=debug".to_string());
+        std::env::var("RUST_LOG").unwrap_or_else(|_| options.default_filter.clone());
 
     let fmt_layer = tracing_subscriber::fmt::layer().with_writer(non_blocking_writer);
 
@@ -421,7 +426,7 @@ pub fn serve_logs<AuthLayer>(options: &'static Options) -> Router {
         .route(
             "/",
             get(move || async move {
-                match serve_logs_index(&options.title, &log_dir_1).await {
+                match serve_logs_index(&options.page_title, &log_dir_1).await {
                     Ok(html) => axum::response::Result::Ok(html),
                     Err(error) => {
                         tracing::error!("{:?}", error);
