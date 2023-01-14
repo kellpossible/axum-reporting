@@ -1,15 +1,17 @@
 //! Utilities for logging and automated bug reporting.
 
 use std::{
+    borrow::Cow,
     ffi::OsStr,
     path::{Path, PathBuf},
-    str::FromStr
+    str::FromStr,
 };
 
 use axum::{
+    http::StatusCode,
     response::{Html, IntoResponse},
     routing::get,
-    Router, http::StatusCode,
+    Router,
 };
 use bytesize::ByteSize;
 use eyre::Context;
@@ -17,11 +19,49 @@ use futures::{stream, Stream, StreamExt, TryStreamExt};
 use html_builder::Html5;
 use tokio_stream::wrappers::ReadDirStream;
 use tower_http::trace::TraceLayer;
+use tracing::Level;
 use tracing_appender::{
     non_blocking::{NonBlockingBuilder, WorkerGuard},
     rolling::{RollingFileAppender, Rotation},
 };
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
+
+/// Storage for logging entries that will be printed later, when application logging setup is
+/// completed.
+#[derive(Default)]
+pub struct DelayedLogs {
+    logs: Vec<(Level, Cow<'static, str>)>,
+}
+
+impl DelayedLogs {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn push(&mut self, level: Level, message: impl Into<Cow<'static, str>>) {
+        self.logs.push((level, message.into()))
+    }
+
+    /// Print logs using println.
+    pub fn print(&self) {
+        for event in &self.logs {
+            println!("{}: {}", event.0, event.1)
+        }
+    }
+
+    /// Present logs using tracing methods.
+    pub fn present(&self) {
+        for event in &self.logs {
+            match event.0 {
+                Level::INFO => tracing::info!("{}", event.1),
+                Level::WARN => tracing::warn!("{}", event.1),
+                Level::DEBUG => tracing::debug!("{}", event.1),
+                Level::ERROR => tracing::error!("{}", event.1),
+                Level::TRACE => tracing::trace!("{}", event.1),
+            }
+        }
+    }
+}
 
 /// Options for writing to log file.
 #[derive(Clone)]
@@ -199,9 +239,8 @@ pub fn setup_logging(options: &Options) -> eyre::Result<Guard> {
         .with(tracing_error::ErrorLayer::default());
 
     #[cfg(feature = "sentry")]
-    let registry = registry
-        .with(sentry.as_ref().map(|_| sentry_tracing::layer()));
-    
+    let registry = registry.with(sentry.as_ref().map(|_| sentry_tracing::layer()));
+
     registry.init();
 
     #[cfg(feature = "sentry")]
@@ -373,8 +412,7 @@ async fn serve_logs_index(title: &str, log_dir: &Path) -> eyre::Result<Html<Stri
 }
 
 /// Implementation for serving logs.
-pub fn serve_logs<AuthLayer>(options: &'static Options) -> Router 
-{
+pub fn serve_logs<AuthLayer>(options: &'static Options) -> Router {
     let log_dir_1 = options.log_dir();
     let log_dir_2 = options.log_dir();
 
@@ -396,8 +434,5 @@ pub fn serve_logs<AuthLayer>(options: &'static Options) -> Router
             "/:filename",
             get(move |filename| async move { serve_log(filename, &log_dir_2).await }),
         )
-        .layer(
-            TraceLayer::new_for_http()
-        )
+        .layer(TraceLayer::new_for_http())
 }
-
