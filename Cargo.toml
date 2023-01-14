@@ -1,0 +1,31 @@
+[package]
+name = "axum-reporting"
+description = "A library for logging/tracing/error reporting for an Axum web service"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+sentry = ["dep:sentry", "sentry-tracing"]
+
+[dependencies]
+axum = "0.6"
+ansi-to-html = "0.1"
+bytesize = "1.1"
+tokio = "1.24"
+linemux = "0.3"
+tokio-stream = { version = "0.1", features = ["fs"] }
+tower = "0.4"
+tower-http = { version = "0.3", features = ["trace"] }
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter"]}
+thiserror = "1.0"
+tracing-error = "0.2"
+eyre = "0.6"
+color-eyre = "0.6"
+futures = "0.3"
+html-builder = "0.4"
+sentry = { version = "0.29", optional = true }
+sentry-tracing = { version = "0.29", optional = true }
