@@ -417,7 +417,7 @@ async fn serve_logs_index(title: &str, log_dir: &Path) -> eyre::Result<Html<Stri
 }
 
 /// Implementation for serving logs.
-pub fn serve_logs<AuthLayer>(options: &'static Options) -> Router {
+pub fn serve_logs(options: &'static Options) -> Router {
     let log_dir_1 = options.log_dir();
     let log_dir_2 = options.log_dir();
 
