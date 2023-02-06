@@ -1,7 +1,6 @@
 //! Utilities for logging and automated bug reporting.
 
 use std::{
-    borrow::Cow,
     ffi::OsStr,
     path::{Path, PathBuf},
     str::FromStr,
@@ -19,49 +18,11 @@ use futures::{stream, Stream, StreamExt, TryStreamExt};
 use html_builder::Html5;
 use tokio_stream::wrappers::ReadDirStream;
 use tower_http::trace::TraceLayer;
-use tracing::Level;
 use tracing_appender::{
     non_blocking::{NonBlockingBuilder, WorkerGuard},
     rolling::{RollingFileAppender, Rotation},
 };
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
-
-/// Storage for logging entries that will be printed later, when application logging setup is
-/// completed.
-#[derive(Default)]
-pub struct DelayedLogs {
-    logs: Vec<(Level, Cow<'static, str>)>,
-}
-
-impl DelayedLogs {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn push(&mut self, level: Level, message: impl Into<Cow<'static, str>>) {
-        self.logs.push((level, message.into()))
-    }
-
-    /// Print logs using println.
-    pub fn print(&self) {
-        for event in &self.logs {
-            println!("{}: {}", event.0, event.1)
-        }
-    }
-
-    /// Present logs using tracing methods.
-    pub fn present(&self) {
-        for event in &self.logs {
-            match event.0 {
-                Level::INFO => tracing::info!("{}", event.1),
-                Level::WARN => tracing::warn!("{}", event.1),
-                Level::DEBUG => tracing::debug!("{}", event.1),
-                Level::ERROR => tracing::error!("{}", event.1),
-                Level::TRACE => tracing::trace!("{}", event.1),
-            }
-        }
-    }
-}
 
 /// Options for writing to log file.
 #[derive(Clone)]
@@ -203,7 +164,7 @@ impl Options {
     }
 }
 
-pub fn setup_logging(options: &Options) -> eyre::Result<Guard> {
+pub fn initialize(options: &Options) -> eyre::Result<Guard> {
     #[cfg(feature = "sentry")]
     let sentry = if let Ok(sentry_dsn) = std::env::var("SENTRY_DSN") {
         Some(sentry::init(sentry::ClientOptions {
@@ -252,6 +213,7 @@ pub fn setup_logging(options: &Options) -> eyre::Result<Guard> {
     let registry = registry.with(sentry.as_ref().map(|_| sentry_tracing::layer()));
 
     registry.init();
+    tracing::info!("Reporting successfully initialized.");
 
     #[cfg(feature = "sentry")]
     if sentry.is_some() {
@@ -422,7 +384,10 @@ async fn serve_logs_index(title: &str, log_dir: &Path) -> eyre::Result<Html<Stri
 }
 
 /// Implementation for serving logs.
-pub fn serve_logs(options: &'static Options) -> Router {
+pub fn serve_logs<S>(options: &'static Options) -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+{
     let log_dir_1 = options.log_dir();
     let log_dir_2 = options.log_dir();
 
