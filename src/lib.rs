@@ -212,6 +212,9 @@ pub fn initialize(options: &Options) -> eyre::Result<Guard> {
     #[cfg(feature = "sentry")]
     let registry = registry.with(sentry.as_ref().map(|_| sentry_tracing::layer()));
 
+    #[cfg(feature = "console-subscriber")]
+    let registry = registry.with(console_subscriber::spawn());
+
     registry.init();
     tracing::info!("Reporting successfully initialized.");
 
