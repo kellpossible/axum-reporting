@@ -306,7 +306,7 @@ async fn serve_log(
     )
     .unwrap();
 
-    let mut body = html.body();
+    let body = html.body();
 
     let formatted_html = tokio::task::spawn_blocking(move || {
         log_file_contents
@@ -322,7 +322,7 @@ async fn serve_log(
     .map_err(eyre::Error::from)?
     .wrap_err("Error converting log file to html")?;
 
-    write!(body, "{}", formatted_html).unwrap();
+    write!(body.raw(), "{formatted_html}").unwrap();
 
     Ok(Html::from(buf.finish()))
 }
@@ -377,9 +377,9 @@ async fn serve_logs_index(title: &str, log_dir: &Path) -> eyre::Result<Html<Stri
                 .ok_or_else(|| eyre::eyre!("Expected path to have a filename"))?
                 .to_str()
                 .ok_or_else(|| eyre::eyre!("Unable to convert filename to utf-8 string"))?;
-            let href_attr = format!(r#"href="/logs/{}""#, filename);
+            let href_attr = format!(r#"href="./logs/{filename}""#);
             let mut a = li.a().attr(&href_attr);
-            write!(a, "{}", filename)?;
+            write!(a, "{filename}")?;
         }
     }
 
