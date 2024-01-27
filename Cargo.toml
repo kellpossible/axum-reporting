@@ -11,13 +11,13 @@ sentry = ["dep:sentry", "sentry-tracing"]
 console-subscriber = ["dep:console-subscriber"]
 
 [dependencies]
-axum = "0.6"
-ansi-to-html = "0.1"
+axum = "0.7.4"
+ansi-to-html = "0.2"
 bytesize = "1.1"
 tokio = "1.24"
 tokio-stream = { version = "0.1", features = ["fs"] }
 tower = "0.4"
-tower-http = { version = "0.4", features = ["trace"] }
+tower-http = { version = "0.5.1", features = ["trace"] }
 tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"]}
@@ -27,6 +27,6 @@ eyre = "0.6"
 color-eyre = "0.6"
 futures = "0.3"
 html-builder = "0.5"
-sentry = { version = "0.30", optional = true }
-sentry-tracing = { version = "0.30", optional = true }
-console-subscriber = { version = "0.1", optional = true }
+sentry = { version = "0.32.1", optional = true }
+sentry-tracing = { version = "0.32.1", optional = true }
+console-subscriber = { version = "0.2", optional = true }
