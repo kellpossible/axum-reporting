@@ -20,7 +20,7 @@ use tokio_stream::wrappers::ReadDirStream;
 use tower_http::trace::TraceLayer;
 use tracing_appender::{
     non_blocking::{NonBlockingBuilder, WorkerGuard},
-    rolling::{RollingFileAppender, Rotation},
+    rolling::RollingFileAppender,
 };
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
@@ -75,7 +75,7 @@ impl ReportWriter {
                     .wrap_err("Unable to create log file directory")?;
             }
             let appender = RollingFileAppender::new(
-                log_file_options.rotation.clone(),
+                log_file_options.rotation.clone().into(),
                 log_file_options.directory.clone(),
                 format!("{}.log", log_file_options.name),
             );
@@ -145,6 +145,8 @@ pub struct Guard {
     _writer: WorkerGuard,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default)]
 pub struct Options {
     /// What default filter to use for logging.
     pub default_filter: String,
@@ -156,6 +158,27 @@ pub struct Options {
     pub log_rotation: Rotation,
     /// Name for the log files.
     pub log_file_name: String,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default, Clone)]
+pub enum Rotation {
+    #[default]
+    Never,
+    Daily,
+    Hourly,
+    Minutely,
+}
+
+impl Into<tracing_appender::rolling::Rotation> for Rotation {
+    fn into(self) -> tracing_appender::rolling::Rotation {
+        match self {
+            Rotation::Never => tracing_appender::rolling::Rotation::NEVER,
+            Rotation::Daily => tracing_appender::rolling::Rotation::DAILY,
+            Rotation::Hourly => tracing_appender::rolling::Rotation::HOURLY,
+            Rotation::Minutely => tracing_appender::rolling::Rotation::MINUTELY,
+        }
+    }
 }
 
 impl Options {
