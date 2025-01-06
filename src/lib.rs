@@ -330,13 +330,13 @@ async fn serve_log(
     .unwrap();
 
     let body = html.body();
+    let ansi_to_html_converter = ansi_to_html::Converter::new();
 
     let formatted_html = tokio::task::spawn_blocking(move || {
         log_file_contents
             .lines()
             .map(|line| {
-                let mut formatted_line =
-                    ansi_to_html::convert_with_opts(line, &ansi_to_html::Opts::default())?;
+                let mut formatted_line = ansi_to_html_converter.convert(line)?;
                 formatted_line.push_str("<br>");
                 Ok(formatted_line)
             })
