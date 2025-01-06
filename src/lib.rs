@@ -433,7 +433,7 @@ where
             }),
         )
         .route(
-            "/:filename",
+            "/{filename}",
             get(move |filename| async move { serve_log(filename, &log_dir_2).await }),
         )
         .layer(TraceLayer::new_for_http())
